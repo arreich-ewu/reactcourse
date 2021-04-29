@@ -10,9 +10,14 @@ jest.mock("../Components/utils/DateCreated", () => {
 });
 
 describe('TodoForm test suite', () => {
+    let submitTodo;
+
+    beforeEach(() =>{
+        submitTodo = jest.fn();
+    });
     describe('DateCreated function and render tests.', () => {
         test('it should render a Date Created Component', () => {
-            const testRenderer = create(<TodoForm />);
+            const testRenderer = create(<TodoForm submitTodo={submitTodo} />);
             const testInstance = testRenderer.root;
             const dateCreated = testInstance.find(
                 el => el.type === 'span' && el.props.testid === 'dateCreated'
@@ -24,7 +29,7 @@ describe('TodoForm test suite', () => {
     describe('on change event tests', () => {
         test( `it should render the new value in the input when todoDescription onChange is activated`, () => {
             const testValue = "Test";
-            const testRenderer = create(<TodoForm />);
+            const testRenderer = create(<TodoForm submitTodo={submitTodo}/>);
             const testInstance = testRenderer.root;
             const descInput = testInstance.findByProps({name: "todoDescription"});
             expect(descInput.props.value).toBe(``);
@@ -34,9 +39,9 @@ describe('TodoForm test suite', () => {
 
         test(`it should render the new value of the checkbox when todoCompleted onChange is activated`, () => {
             const testValue = true;
-            const testRenderer = create(<TodoForm />);
+            const testRenderer = create(<TodoForm submitTodo={submitTodo}/>);
             const testInstance = testRenderer.root;
-            const completedInput = testInstance.findByProps({name: "todoCompleted"})
+            const completedInput = testInstance.findByProps({name: "todoCompleted"});
             expect(completedInput.props.checked).toEqual(false);
             act(()=> completedInput.props.onChange({target:{checked:testValue}}));
             expect(completedInput.props.checked).toEqual(testValue);
@@ -44,7 +49,7 @@ describe('TodoForm test suite', () => {
 
         test(`it should enable the submit button when the todoDescription onChange is activated`, () => {
             const testValue = 'Test';
-            const testRenderer = create(<TodoForm />);
+            const testRenderer = create(<TodoForm submitTodo={submitTodo}/>);
             const testInstance = testRenderer.root;
             const descInput = testInstance.findByProps({name: "todoDescription"});
             const submitBtn = testInstance.findByProps({type:`submit`});
@@ -54,6 +59,28 @@ describe('TodoForm test suite', () => {
             expect(submitBtn.props.className).toContain("btn-primary");
 
         })
+    });
+
+    describe("Form submission tests", () => {
+        test(`it should call submitTodo and reset the form on submission`, async () =>{
+            const testRenderer = create(<TodoForm submitTodo={submitTodo}/>);
+            const testInstance = testRenderer.root;
+            const descInput = testInstance.findByProps({name: "todoDescription"});
+            const completedInput = testInstance.findByProps({name: "todoCompleted"});
+            const descTestValue = "Test";
+            const compTestValue = false;
+            const form = testInstance.findByType('form');
+            await act(async () => completedInput.props.onChange({target:{checked:compTestValue}}));
+            await act(async () => descInput.props.onChange({target:{value:descTestValue}}));
+            await act(async () => form.props.onSubmit(new Event('form')));
+            expect(submitTodo).toHaveBeenCalledTimes(1);
+            expect(submitTodo).toHaveBeenCalledWith(descTestValue, null, compTestValue);
+            expect(descInput.props.value).toBe(``);
+            expect(completedInput.props.checked).toBe(false);
+
+
+        });
+
     });
 
 })
